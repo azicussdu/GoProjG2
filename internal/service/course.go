@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/azicussdu/GoProjG2/internal/repository"
 )
@@ -27,4 +29,11 @@ func (cs *CourseService) GetAll() ([]model.Course, error) {
 
 func (cs *CourseService) GetByID(id int) (model.Course, error) {
 	return cs.repo.GetByID(id)
+}
+
+func (cs *CourseService) Delete(id int) error {
+	if id <= 0 {
+		return errors.New("Invalid ID")
+	}
+	return cs.repo.Delete(id)
 }

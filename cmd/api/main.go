@@ -20,6 +20,7 @@ func main() {
 
 	router.GET("/api/courses", courseHandler.GetAll)
 	router.GET("/api/courses/:id", courseHandler.GetByID)
+	router.DELETE("/api/courses/:id", courseHandler.Delete)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}
 

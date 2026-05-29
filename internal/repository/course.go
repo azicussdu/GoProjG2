@@ -40,3 +40,12 @@ func (cr *CourseRepo) GetByID(id int) (model.Course, error) {
 	}
 	return course, nil
 }
+
+func (cr *CourseRepo) Delete(id int) error {
+	if _, ok := cr.coursesMap[id]; !ok {
+		return errors.New("Course is not found")
+	}
+
+	delete(cr.coursesMap, id)
+	return nil
+}
