@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/azicussdu/GoProjG2/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -58,4 +59,46 @@ func (ch *CourseHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Course was deleted"})
+}
+
+func (ch *CourseHandler) Create(c *gin.Context) {
+	var input model.CreateCourse
+
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad json data"})
+		return
+	}
+
+	newId, err := ch.service.Create(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Some error happened"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"id": newId})
+}
+
+func (ch *CourseHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID parameter"})
+		return
+	}
+
+	var input model.UpdateCourse
+	err = c.ShouldBindJSON(&input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad json data"})
+		return
+	}
+
+	course, err := ch.service.Update(id, input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong fields"})
+		return
+	}
+
+	c.JSON(http.StatusOK, course)
 }

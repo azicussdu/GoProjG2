@@ -49,3 +49,31 @@ func (cr *CourseRepo) Delete(id int) error {
 	delete(cr.coursesMap, id)
 	return nil
 }
+
+func (cr *CourseRepo) Create(course model.Course) (int, error) {
+	course.ID = len(cr.coursesMap) + 1
+	cr.coursesMap[course.ID] = course
+
+	return course.ID, nil
+}
+
+func (cr *CourseRepo) Update(id int, input model.UpdateCourse) (model.Course, error) {
+	course, ok := cr.coursesMap[id]
+	if !ok {
+		return model.Course{}, errors.New("Course not found")
+	}
+
+	if input.Title != nil {
+		course.Title = *input.Title
+	}
+	if input.Price != nil {
+		course.Price = *input.Price
+	}
+	if input.IsActive != nil {
+		course.IsActive = *input.IsActive
+	}
+	course.UpdatedAt = time.Now()
+
+	cr.coursesMap[id] = course
+	return course, nil
+}
