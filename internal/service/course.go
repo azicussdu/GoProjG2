@@ -9,10 +9,10 @@ import (
 )
 
 type CourseService struct {
-	repo *repository.CourseRepo
+	repo repository.CourseRepoI
 }
 
-func NewCourseService(courseRepo *repository.CourseRepo) *CourseService {
+func NewCourseService(courseRepo repository.CourseRepoI) *CourseService {
 	service := &CourseService{
 		repo: courseRepo,
 	}

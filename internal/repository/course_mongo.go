@@ -7,12 +7,12 @@ import (
 	"github.com/azicussdu/GoProjG2/internal/model"
 )
 
-type PostgresCourseRepo struct {
+type MongoCourseRepo struct {
 	coursesMap map[int]model.Course
 }
 
-func NewPostgresCourseRepo() *PostgresCourseRepo {
-	repo := &PostgresCourseRepo{
+func NewMongoCourseRepo() *MongoCourseRepo {
+	repo := &MongoCourseRepo{
 		coursesMap: make(map[int]model.Course),
 	}
 
@@ -23,7 +23,7 @@ func NewPostgresCourseRepo() *PostgresCourseRepo {
 	return repo
 }
 
-func (cr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
+func (cr *MongoCourseRepo) GetAll() ([]model.Course, error) {
 	coursesSlice := make([]model.Course, 0)
 
 	for _, crs := range cr.coursesMap {
@@ -33,7 +33,7 @@ func (cr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
 	return coursesSlice, nil
 }
 
-func (cr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
+func (cr *MongoCourseRepo) GetByID(id int) (model.Course, error) {
 	course, ok := cr.coursesMap[id]
 	if !ok {
 		return model.Course{}, errors.New("course is not found")
@@ -41,7 +41,7 @@ func (cr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
 	return course, nil
 }
 
-func (cr *PostgresCourseRepo) Delete(id int) error {
+func (cr *MongoCourseRepo) Delete(id int) error {
 	if _, ok := cr.coursesMap[id]; !ok {
 		return errors.New("Course is not found")
 	}
@@ -50,14 +50,14 @@ func (cr *PostgresCourseRepo) Delete(id int) error {
 	return nil
 }
 
-func (cr *PostgresCourseRepo) Create(course model.Course) (int, error) {
+func (cr *MongoCourseRepo) Create(course model.Course) (int, error) {
 	course.ID = len(cr.coursesMap) + 1
 	cr.coursesMap[course.ID] = course
 
 	return course.ID, nil
 }
 
-func (cr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (model.Course, error) {
+func (cr *MongoCourseRepo) Update(id int, input model.UpdateCourse) (model.Course, error) {
 	course, ok := cr.coursesMap[id]
 	if !ok {
 		return model.Course{}, errors.New("Course not found")
