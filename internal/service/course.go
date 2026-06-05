@@ -1,9 +1,9 @@
 package service
 
 import (
-	"errors"
 	"time"
 
+	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/azicussdu/GoProjG2/internal/repository"
 )
@@ -34,17 +34,17 @@ func (cs *CourseService) GetByID(id int) (model.Course, error) {
 
 func (cs *CourseService) Delete(id int) error {
 	if id <= 0 {
-		return errors.New("Invalid ID")
+		return apperrors.BadRequest("invalid ID parameter", nil)
 	}
 	return cs.repo.Delete(id)
 }
 
 func (cs *CourseService) Create(input model.CreateCourse) (int, error) {
 	if len(input.Title) < 3 {
-		return 0, errors.New("course title is very short")
+		return 0, apperrors.BadRequest("course title is too short", nil)
 	}
 	if input.Price < 0 {
-		return 0, errors.New("course price can not be negative")
+		return 0, apperrors.BadRequest("price can not be negative", nil)
 	}
 
 	course := model.Course{
@@ -62,15 +62,15 @@ func (cs *CourseService) Update(id int, input model.UpdateCourse) (model.Course,
 	// kurs bar ma jok pa?
 	_, err := cs.repo.GetByID(id)
 	if err != nil {
-		return model.Course{}, errors.New("course is not found")
+		return model.Course{}, err
 	}
 
 	if input.Title != nil && len(*input.Title) < 3 {
-		return model.Course{}, errors.New("course title is very short")
+		return model.Course{}, apperrors.BadRequest("course title is too short", nil)
 	}
 
 	if input.Price != nil && *input.Price < 0 {
-		return model.Course{}, errors.New("course price can not be negative")
+		return model.Course{}, apperrors.BadRequest("price can not be negative", nil)
 	}
 
 	return cs.repo.Update(id, input)

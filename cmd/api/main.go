@@ -17,7 +17,7 @@ func main() {
 		return
 	}
 
-	courseRepo := repository.NewMongoCourseRepo()
+	courseRepo := repository.NewPostgresCourseRepo()
 	courseService := service.NewCourseService(courseRepo)
 	courseHandler := handler.NewCourseHandler(courseService)
 

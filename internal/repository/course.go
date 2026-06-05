@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"errors"
 	"time"
 
+	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 )
 
@@ -36,14 +36,14 @@ func (cr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
 func (cr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
 	course, ok := cr.coursesMap[id]
 	if !ok {
-		return model.Course{}, errors.New("course is not found")
+		return model.Course{}, apperrors.NotFound("course is not found", nil)
 	}
 	return course, nil
 }
 
 func (cr *PostgresCourseRepo) Delete(id int) error {
 	if _, ok := cr.coursesMap[id]; !ok {
-		return errors.New("Course is not found")
+		return apperrors.NotFound("course is not found", nil)
 	}
 
 	delete(cr.coursesMap, id)
@@ -60,7 +60,7 @@ func (cr *PostgresCourseRepo) Create(course model.Course) (int, error) {
 func (cr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (model.Course, error) {
 	course, ok := cr.coursesMap[id]
 	if !ok {
-		return model.Course{}, errors.New("Course not found")
+		return model.Course{}, apperrors.NotFound("course is not found", nil)
 	}
 
 	if input.Title != nil {
