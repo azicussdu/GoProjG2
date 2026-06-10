@@ -7,10 +7,17 @@ import (
 )
 
 type Config struct {
-	Port       string
-	DBUser     string
-	DBPassword string
-	DBHost     string
+	Port     string
+	Database *DBConfig
+}
+
+type DBConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	DBName   string
+	SSLMode  string
 }
 
 func Load() (*Config, error) {
@@ -20,10 +27,15 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		Port:       getEnv("PORT", "3030"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBUser:     getEnv("DB_USER", "azaaza"),
-		DBPassword: getEnv("DB_PASSWORD", "123123"),
+		Port: getEnv("PORT", "3030"),
+		Database: &DBConfig{
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_PORT", "5432"),
+			Username: getEnv("DB_USER", "user123"),
+			Password: getEnv("DB_PASSWORD", "qwerty123"),
+			DBName:   getEnv("DB_NAME", "dbname"),
+			SSLMode:  getEnv("SSL_MODE", "disable"),
+		},
 	}, nil
 }
 
