@@ -17,7 +17,9 @@ func main() {
 		return
 	}
 
-	courseRepo := repository.NewPostgresCourseRepo()
+	db, err := repository.NewPostgresDB(cfg)
+
+	courseRepo := repository.NewPostgresCourseRepo(db)
 	courseService := service.NewCourseService(courseRepo)
 	courseHandler := handler.NewCourseHandler(courseService)
 
