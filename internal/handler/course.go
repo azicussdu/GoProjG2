@@ -95,11 +95,11 @@ func (ch *CourseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	course, err := ch.service.Update(id, input)
+	updatedId, err := ch.service.Update(id, input)
 	if err != nil {
 		respondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, course)
+	c.JSON(http.StatusOK, gin.H{"id": updatedId})
 }

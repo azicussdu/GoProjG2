@@ -1,6 +1,11 @@
 package repository
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/jmoiron/sqlx"
 )
@@ -67,26 +72,75 @@ func (pcr *PostgresCourseRepo) Delete(id int) error {
 }
 
 func (pcr *PostgresCourseRepo) Create(course model.Course) (int, error) {
-	return 0, nil
+
+	query := `
+		INSERT INTO courses (
+		    title, price, is_active, created_at, updated_at
+		) VALUES (
+		    :title, :price, :is_active, :created_at, :updated_at
+		)
+		RETURNING id
+	`
+
+	rows, err := pcr.db.NamedQuery(query, course)
+	if err != nil {
+		return 0, err
+	}
+
+	var id int
+	if rows.Next() {
+		err = rows.Scan(&id)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return id, nil
 }
 
-func (pcr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (model.Course, error) {
-	//course, ok := cr.coursesMap[id]
-	//if !ok {
-	//	return model.Course{}, apperrors.NotFound("course is not found", nil)
-	//}
-	//
-	//if input.Title != nil {
-	//	course.Title = *input.Title
-	//}
-	//if input.Price != nil {
-	//	course.Price = *input.Price
-	//}
-	//if input.IsActive != nil {
-	//	course.IsActive = *input.IsActive
-	//}
-	//course.UpdatedAt = time.Now()
-	//
-	//cr.coursesMap[id] = course
-	return model.Course{}, nil
+func (pcr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (int, error) {
+	var setParts []string // ["title=$1",      "is_active=$2", "updated_at=$3"]
+	var args []any        // ["Cybersecurity", true,			20:48_17.06.2026]
+	argID := 1            // 4
+
+	if input.Title != nil {
+		setParts = append(setParts, fmt.Sprintf("title=$%d", argID))
+		args = append(args, *input.Title)
+		argID++
+	}
+
+	if input.Price != nil {
+		setParts = append(setParts, fmt.Sprintf("price=$%d", argID))
+		args = append(args, *input.Price)
+		argID++
+	}
+
+	if input.IsActive != nil {
+		setParts = append(setParts, fmt.Sprintf("is_active=$%d", argID))
+		args = append(args, *input.IsActive)
+		argID++
+	}
+
+	if len(setParts) == 0 {
+		return 0, errors.New("no fields to update")
+	}
+
+	setParts = append(setParts, fmt.Sprintf("updated_at=$%d", argID))
+	args = append(args, time.Now())
+	argID++
+
+	query := fmt.Sprintf(`
+		UPDATE courses
+		SET %s
+		WHERE id = $%d
+	`, strings.Join(setParts, ", "), argID)
+
+	args = append(args, id)
+
+	_, err := pcr.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }

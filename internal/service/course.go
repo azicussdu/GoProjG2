@@ -58,19 +58,19 @@ func (cs *CourseService) Create(input model.CreateCourse) (int, error) {
 	return cs.repo.Create(course)
 }
 
-func (cs *CourseService) Update(id int, input model.UpdateCourse) (model.Course, error) {
+func (cs *CourseService) Update(id int, input model.UpdateCourse) (int, error) {
 	// kurs bar ma jok pa?
 	_, err := cs.repo.GetByID(id)
 	if err != nil {
-		return model.Course{}, err
+		return 0, err
 	}
 
 	if input.Title != nil && len(*input.Title) < 3 {
-		return model.Course{}, apperrors.BadRequest("course title is too short", nil)
+		return 0, apperrors.BadRequest("course title is too short", nil)
 	}
 
 	if input.Price != nil && *input.Price < 0 {
-		return model.Course{}, apperrors.BadRequest("price can not be negative", nil)
+		return 0, apperrors.BadRequest("price can not be negative", nil)
 	}
 
 	return cs.repo.Update(id, input)
