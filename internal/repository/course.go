@@ -26,7 +26,7 @@ func (pcr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
 	coursesSlice := make([]model.Course, 0)
 
 	query := `
-		SELECT id, title, price, is_active
+		SELECT id, title, price, is_active, created_at, updated_at
 		FROM courses
 		ORDER BY created_at
 	`
@@ -43,7 +43,7 @@ func (pcr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
 	var course model.Course
 
 	query := `
-		SELECT id, title, price, is_active
+		SELECT id, title, price, is_active, created_at, updated_at
 		FROM courses
 		WHERE id = $1
 		LIMIT 1
@@ -99,9 +99,9 @@ func (pcr *PostgresCourseRepo) Create(course model.Course) (int, error) {
 }
 
 func (pcr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (int, error) {
-	var setParts []string // ["title=$1",      "is_active=$2", "updated_at=$3"]
-	var args []any        // ["Cybersecurity", true,			20:48_17.06.2026]
-	argID := 1            // 4
+	var setParts []string
+	var args []any
+	argID := 1
 
 	if input.Title != nil {
 		setParts = append(setParts, fmt.Sprintf("title=$%d", argID))
