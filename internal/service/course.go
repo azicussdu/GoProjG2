@@ -29,6 +29,9 @@ func (cs *CourseService) GetAll() ([]model.Course, error) {
 }
 
 func (cs *CourseService) GetByID(id int) (model.Course, error) {
+	if id <= 0 {
+		return model.Course{}, apperrors.BadRequest("invalid ID parameter", nil)
+	}
 	return cs.repo.GetByID(id)
 }
 
@@ -40,37 +43,36 @@ func (cs *CourseService) Delete(id int) error {
 }
 
 func (cs *CourseService) Create(input model.CreateCourse) (int, error) {
-	if len(input.Title) < 3 {
-		return 0, apperrors.BadRequest("course title is too short", nil)
-	}
-	if input.Price < 0 {
-		return 0, apperrors.BadRequest("price can not be negative", nil)
+	if err := input.Validate(); err != nil {
+		return 0, err
 	}
 
 	course := model.Course{
-		Title:     input.Title,
-		Price:     input.Price,
-		IsActive:  input.IsActive,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Title:       input.Title,
+		Description: input.Description,
+		Price:       input.Price,
+		Level:       input.Level,
+		IsActive:    input.IsActive,
+		TeacherID:   input.TeacherID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	return cs.repo.Create(course)
 }
 
 func (cs *CourseService) Update(id int, input model.UpdateCourse) (int, error) {
-	// kurs bar ma jok pa?
+	if id <= 0 {
+		return 0, apperrors.BadRequest("invalid ID parameter", nil)
+	}
+
 	_, err := cs.repo.GetByID(id)
 	if err != nil {
 		return 0, err
 	}
 
-	if input.Title != nil && len(*input.Title) < 3 {
-		return 0, apperrors.BadRequest("course title is too short", nil)
-	}
-
-	if input.Price != nil && *input.Price < 0 {
-		return 0, apperrors.BadRequest("price can not be negative", nil)
+	if err = input.Validate(); err != nil {
+		return 0, err
 	}
 
 	return cs.repo.Update(id, input)
