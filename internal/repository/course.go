@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -24,7 +25,7 @@ func NewPostgresCourseRepo(dbObj *sqlx.DB) *PostgresCourseRepo {
 	return repo
 }
 
-func (pcr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
+func (pcr *PostgresCourseRepo) GetAll(ctx context.Context) ([]model.Course, error) {
 	coursesSlice := make([]model.Course, 0)
 
 	query := `
@@ -34,7 +35,7 @@ func (pcr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
 		ORDER BY created_at
 	`
 
-	err := pcr.db.Select(&coursesSlice, query)
+	err := pcr.db.SelectContext(ctx, &coursesSlice, query)
 	if err != nil {
 		return nil, apperrors.Internal("failed to get courses", err)
 	}
@@ -42,7 +43,7 @@ func (pcr *PostgresCourseRepo) GetAll() ([]model.Course, error) {
 	return coursesSlice, nil
 }
 
-func (pcr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
+func (pcr *PostgresCourseRepo) GetByID(ctx context.Context, id int) (model.Course, error) {
 	var course model.Course
 
 	query := `
@@ -52,7 +53,7 @@ func (pcr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
 		LIMIT 1
 	`
 
-	err := pcr.db.Get(&course, query, id)
+	err := pcr.db.GetContext(ctx, &course, query, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.Course{}, apperrors.NotFound("course with ID not found", err)
@@ -63,7 +64,7 @@ func (pcr *PostgresCourseRepo) GetByID(id int) (model.Course, error) {
 	return course, nil
 }
 
-func (pcr *PostgresCourseRepo) Delete(id int) error {
+func (pcr *PostgresCourseRepo) Delete(ctx context.Context, id int) error {
 	query := `
 		UPDATE courses
 		SET deleted_at = NOW(),
@@ -71,7 +72,7 @@ func (pcr *PostgresCourseRepo) Delete(id int) error {
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	result, err := pcr.db.Exec(query, id)
+	result, err := pcr.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return apperrors.Internal("failed to delete course", err)
 	}
@@ -88,7 +89,7 @@ func (pcr *PostgresCourseRepo) Delete(id int) error {
 	return nil
 }
 
-func (pcr *PostgresCourseRepo) Create(course model.Course) (int, error) {
+func (pcr *PostgresCourseRepo) Create(ctx context.Context, course model.Course) (int, error) {
 
 	query := `
 		INSERT INTO courses (
@@ -99,7 +100,7 @@ func (pcr *PostgresCourseRepo) Create(course model.Course) (int, error) {
 		RETURNING id
 	`
 
-	rows, err := pcr.db.NamedQuery(query, course)
+	rows, err := pcr.db.NamedQueryContext(ctx, query, course)
 	if err != nil {
 		return 0, apperrors.Internal("failed to created course", err)
 	}
@@ -115,7 +116,7 @@ func (pcr *PostgresCourseRepo) Create(course model.Course) (int, error) {
 	return id, nil
 }
 
-func (pcr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (int, error) {
+func (pcr *PostgresCourseRepo) Update(ctx context.Context, id int, input model.UpdateCourse) (int, error) {
 	var setParts []string
 	var args []any
 	argID := 1
@@ -172,7 +173,7 @@ func (pcr *PostgresCourseRepo) Update(id int, input model.UpdateCourse) (int, er
 
 	args = append(args, id)
 
-	result, err := pcr.db.Exec(query, args...)
+	result, err := pcr.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return 0, apperrors.Internal("failed to update course", err)
 	}

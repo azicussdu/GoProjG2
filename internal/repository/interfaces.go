@@ -1,11 +1,15 @@
 package repository
 
-import "github.com/azicussdu/GoProjG2/internal/model"
+import (
+	"context"
+
+	"github.com/azicussdu/GoProjG2/internal/model"
+)
 
 type CourseRepoI interface {
-	GetAll() ([]model.Course, error)
-	GetByID(id int) (model.Course, error)
-	Delete(id int) error
-	Create(course model.Course) (int, error)
-	Update(id int, input model.UpdateCourse) (int, error)
+	GetAll(ctx context.Context) ([]model.Course, error)
+	GetByID(ctx context.Context, id int) (model.Course, error)
+	Delete(ctx context.Context, id int) error
+	Create(ctx context.Context, course model.Course) (int, error)
+	Update(ctx context.Context, id int, input model.UpdateCourse) (int, error)
 }

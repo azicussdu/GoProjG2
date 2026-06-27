@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -20,7 +21,10 @@ func NewPostgresDB(cfg *config.Config) (*sqlx.DB, error) {
 		cfg.Database.DBName,
 		cfg.Database.SSLMode)
 
-	db, err := sqlx.Connect("pgx", connStr)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	db, err := sqlx.ConnectContext(ctx, "pgx", connStr)
 	if err != nil {
 		return nil, err
 	}

@@ -19,7 +19,8 @@ func NewCourseHandler(courseSrv *service.CourseService) *CourseHandler {
 }
 
 func (ch *CourseHandler) GetAll(c *gin.Context) {
-	courses, err := ch.service.GetAll()
+	ctx := c.Request.Context()
+	courses, err := ch.service.GetAll(ctx)
 	if err != nil {
 		respondWithError(c, err)
 		return
@@ -36,7 +37,8 @@ func (ch *CourseHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	course, err := ch.service.GetByID(id)
+	ctx := c.Request.Context()
+	course, err := ch.service.GetByID(ctx, id)
 	if err != nil {
 		respondWithError(c, err)
 		return
@@ -53,7 +55,8 @@ func (ch *CourseHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	err = ch.service.Delete(id)
+	ctx := c.Request.Context()
+	err = ch.service.Delete(ctx, id)
 	if err != nil {
 		respondWithError(c, err)
 		return
@@ -71,7 +74,8 @@ func (ch *CourseHandler) Create(c *gin.Context) {
 		return
 	}
 
-	newId, err := ch.service.Create(input)
+	ctx := c.Request.Context()
+	newId, err := ch.service.Create(ctx, input)
 	if err != nil {
 		respondWithError(c, err)
 		return
@@ -95,7 +99,8 @@ func (ch *CourseHandler) Update(c *gin.Context) {
 		return
 	}
 
-	updatedId, err := ch.service.Update(id, input)
+	ctx := c.Request.Context()
+	updatedId, err := ch.service.Update(ctx, id, input)
 	if err != nil {
 		respondWithError(c, err)
 		return

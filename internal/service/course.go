@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
@@ -20,29 +21,29 @@ func NewCourseService(courseRepo repository.CourseRepoI) *CourseService {
 	return service
 }
 
-func (cs *CourseService) GetAll() ([]model.Course, error) {
-	courses, err := cs.repo.GetAll()
+func (cs *CourseService) GetAll(ctx context.Context) ([]model.Course, error) {
+	courses, err := cs.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return courses, nil
 }
 
-func (cs *CourseService) GetByID(id int) (model.Course, error) {
+func (cs *CourseService) GetByID(ctx context.Context, id int) (model.Course, error) {
 	if id <= 0 {
 		return model.Course{}, apperrors.BadRequest("invalid ID parameter", nil)
 	}
-	return cs.repo.GetByID(id)
+	return cs.repo.GetByID(ctx, id)
 }
 
-func (cs *CourseService) Delete(id int) error {
+func (cs *CourseService) Delete(ctx context.Context, id int) error {
 	if id <= 0 {
 		return apperrors.BadRequest("invalid ID parameter", nil)
 	}
-	return cs.repo.Delete(id)
+	return cs.repo.Delete(ctx, id)
 }
 
-func (cs *CourseService) Create(input model.CreateCourse) (int, error) {
+func (cs *CourseService) Create(ctx context.Context, input model.CreateCourse) (int, error) {
 	if err := input.Validate(); err != nil {
 		return 0, err
 	}
@@ -58,15 +59,15 @@ func (cs *CourseService) Create(input model.CreateCourse) (int, error) {
 		UpdatedAt:   time.Now(),
 	}
 
-	return cs.repo.Create(course)
+	return cs.repo.Create(ctx, course)
 }
 
-func (cs *CourseService) Update(id int, input model.UpdateCourse) (int, error) {
+func (cs *CourseService) Update(ctx context.Context, id int, input model.UpdateCourse) (int, error) {
 	if id <= 0 {
 		return 0, apperrors.BadRequest("invalid ID parameter", nil)
 	}
 
-	_, err := cs.repo.GetByID(id)
+	_, err := cs.repo.GetByID(ctx, id)
 	if err != nil {
 		return 0, err
 	}
@@ -75,5 +76,5 @@ func (cs *CourseService) Update(id int, input model.UpdateCourse) (int, error) {
 		return 0, err
 	}
 
-	return cs.repo.Update(id, input)
+	return cs.repo.Update(ctx, id, input)
 }
