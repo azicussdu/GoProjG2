@@ -15,4 +15,17 @@ create table courses (
 );
 ```
 
+```
+create table lessons (
+                         id          serial primary key,
+                         course_id   integer not null references courses(id) on delete cascade,
+                         title       varchar(255) not null,
+                         content     text,
+                         position    integer not null default 1, -- order of lesson in course
+                         created_at  timestamp not null default now(),
+                         updated_at  timestamp not null default now(),
+                         deleted_at  timestamp null
+);
+```
+
 ---

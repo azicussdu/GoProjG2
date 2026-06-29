@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/azicussdu/GoProjG2/internal/config"
@@ -14,10 +14,14 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		return
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	db, err := repository.NewPostgresDB(cfg)
+	if err != nil {
+		log.Fatalf("failed to connect to postgres: %v", err)
+	}
+	defer db.Close()
 
 	courseRepo := repository.NewPostgresCourseRepo(db)
 	courseService := service.NewCourseService(courseRepo)
@@ -34,6 +38,6 @@ func main() {
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: router}
 
 	if err := srv.ListenAndServe(); err != nil {
-		fmt.Println("Server error")
+		log.Fatalf("server failed: %v", err)
 	}
 }
