@@ -28,4 +28,17 @@ create table lessons (
 );
 ```
 
+```
+create table users (
+                       id              serial primary key,
+                       full_name       varchar(255) not null,
+                       email           varchar(255) not null unique,
+                       password_hash   text not null,
+                       role            varchar(50) not null default 'student', -- student | teacher | admin
+                       is_active       boolean not null default true,
+                       created_at      timestamp not null default now(),
+                       updated_at      timestamp not null default now()
+);
+```
+
 ---

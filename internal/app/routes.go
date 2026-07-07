@@ -8,12 +8,13 @@ import (
 func setupRouter(
 	courseHandler *handler.CourseHandler,
 	lessonHandler *handler.LessonHandler,
+	authHandler *handler.AuthHandler,
 ) *gin.Engine {
 	router := gin.New()
 
 	api := router.Group("/api")
 	{
-		courses := api.Group("/courses")
+		courses := api.Group("/courses") //  /api/courses/...
 		{
 			courses.GET("", courseHandler.GetAll)
 			courses.GET("/:id", courseHandler.GetByID)
@@ -23,13 +24,21 @@ func setupRouter(
 			courses.GET("/:id/lessons", lessonHandler.GetByCourseID)
 		}
 
-		lessons := api.Group("/lessons")
+		lessons := api.Group("/lessons") //  /api/lessons/...
 		{
 			lessons.GET("/:id", lessonHandler.GetByID)
 			lessons.POST("", lessonHandler.Create)
 			lessons.PUT("/:id", lessonHandler.Update)
 			lessons.DELETE("/:id", lessonHandler.Delete)
 		}
+
+		authGroup := api.Group("/auth") //   /api/auth/register
+		{
+			authGroup.POST("/register", authHandler.Register)
+			authGroup.POST("/login", authHandler.Login)
+			authGroup.GET("/me", authHandler.Me)
+		}
+
 	}
 
 	return router

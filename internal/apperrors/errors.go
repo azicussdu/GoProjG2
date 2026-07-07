@@ -31,3 +31,15 @@ func BadRequest(msg string, err error) *AppError {
 func Internal(msg string, err error) *AppError {
 	return New(http.StatusInternalServerError, msg, err)
 }
+
+func Unauthorized(msg string, err error) *AppError {
+	return New(http.StatusUnauthorized, msg, err)
+}
+
+func Forbidden(msg string, err error) *AppError {
+	return New(http.StatusForbidden, msg, err)
+}
+
+func Conflict(msg string, err error) *AppError {
+	return New(http.StatusConflict, msg, err)
+}

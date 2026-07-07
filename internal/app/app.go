@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 
+	"github.com/azicussdu/GoProjG2/internal/auth"
 	"github.com/azicussdu/GoProjG2/internal/config"
 	"github.com/azicussdu/GoProjG2/internal/handler"
 	"github.com/azicussdu/GoProjG2/internal/repository"
@@ -24,7 +25,12 @@ func Run(cfg *config.Config) error {
 	lessonService := service.NewLessonService(lessonRepo)
 	lessonHandler := handler.NewLessonHandler(lessonService)
 
-	router := setupRouter(courseHandler, lessonHandler)
+	jwtManager := auth.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
+	userRepo := repository.NewPostgresUserRepo(db)
+	authService := service.NewAuthService(userRepo, jwtManager)
+	authHandler := handler.NewAuthHandler(authService)
+
+	router := setupRouter(courseHandler, lessonHandler, authHandler)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: router}
 	return srv.ListenAndServe()

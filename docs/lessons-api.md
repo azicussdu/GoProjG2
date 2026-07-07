@@ -8,25 +8,22 @@
 *Тело запроса:*
 ```json
 {
-  "title": "Introduction to Go Programming",
-  "description": "Learn Go fundamentals including goroutines, channels, and error handling.",
-  "price": 5999,
-  "level": "advanced",
-  "is_active": true,
-  "teacher_id": 1
+  "course_id": 5,
+  "title": "Getting Started",
+  "content": "Learn how to set up your environment and prepare for the course.",
+  "position": 1
 }
 ```
 
-**PUT http://localhost:8080/api/courses/5** — Обновляет курс по ID.  
+**PUT http://localhost:8080/api/lessons/5** — Обновляет урок по ID.  
 *Пример тела запроса:*
 ```json
 {
-  "title": "Introduction to Go Programming",
-  "price": 5999,
-  "level": "advanced"
+  "course_id": 5,
+  "content": "Learn how to set up your environment and prepare for the course."
 }
 ```
 
-**DELETE http://localhost:8080/api/courses/5** — Удаляет курс по ID.
+**DELETE http://localhost:8080/api/lessons/5** — Удаляет урок по ID.
 
 ---

@@ -21,3 +21,9 @@ type LessonRepoI interface {
 	Update(ctx context.Context, id int, input model.UpdateLesson) (int, error)
 	Delete(ctx context.Context, id int) error
 }
+
+type UserRepoI interface {
+	Create(ctx context.Context, user model.User) (int, error)
+	GetByEmail(ctx context.Context, email string) (model.User, error)
+	GetByID(ctx context.Context, id int) (model.User, error)
+}
