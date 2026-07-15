@@ -26,11 +26,12 @@ func Run(cfg *config.Config) error {
 	lessonHandler := handler.NewLessonHandler(lessonService)
 
 	jwtManager := auth.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
+
 	userRepo := repository.NewPostgresUserRepo(db)
 	authService := service.NewAuthService(userRepo, jwtManager)
 	authHandler := handler.NewAuthHandler(authService)
 
-	router := setupRouter(courseHandler, lessonHandler, authHandler)
+	router := setupRouter(courseHandler, lessonHandler, authHandler, jwtManager)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: router}
 	return srv.ListenAndServe()

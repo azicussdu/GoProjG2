@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
@@ -45,26 +46,65 @@ func (as *AuthService) Register(ctx context.Context, input model.RegisterInput) 
 	return as.repo.Create(ctx, user)
 }
 
-func (as *AuthService) Login(ctx context.Context, input model.LoginInput) (string, error) {
+func (as *AuthService) Login(ctx context.Context, input model.LoginInput) (model.AuthTokens, error) {
 	if err := input.Validate(); err != nil {
-		return "", err
+		return model.AuthTokens{}, err
 	}
 
 	user, err := as.repo.GetByEmail(ctx, input.Email)
 	if err != nil {
-		return "", apperrors.Unauthorized("invalid email or password", nil)
+		return model.AuthTokens{}, apperrors.Unauthorized("invalid email or password", nil)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
-		return "", apperrors.Unauthorized("invalid email or password", err)
+		return model.AuthTokens{}, apperrors.Unauthorized("invalid email or password", err)
 	}
 
-	accessToken, err := as.jwtManager.NewAccessToken(user)
+	accessToken, accessExp, err := as.jwtManager.NewAccessToken(user)
 	if err != nil {
-		return "", apperrors.Internal("failed to create access token", err)
+		return model.AuthTokens{}, apperrors.Internal("failed to create access token", err)
 	}
 
-	return accessToken, nil
+	refreshToken, refreshExp, err := as.jwtManager.NewRefreshToken(user)
+	if err != nil {
+		return model.AuthTokens{}, apperrors.Internal("failed to create refresh token", err)
+	}
+
+	return model.AuthTokens{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		AccessExpAt:  accessExp,
+		RefreshExpAt: refreshExp,
+	}, nil
+}
+
+func (as *AuthService) Refresh(ctx context.Context, refreshToken string) (model.AuthTokens, error) {
+	refreshToken = strings.TrimSpace(refreshToken)
+	if refreshToken == "" {
+		return model.AuthTokens{}, apperrors.BadRequest("empty refresh token", nil)
+	}
+
+	user, err := as.jwtManager.ParseRefreshToken(refreshToken)
+	if err != nil {
+		return model.AuthTokens{}, apperrors.Unauthorized("invalid refresh token", err)
+	}
+
+	accessToken, accessExp, err := as.jwtManager.NewAccessToken(*user)
+	if err != nil {
+		return model.AuthTokens{}, apperrors.Internal("failed to create access token", err)
+	}
+
+	refreshToken, refreshExp, err := as.jwtManager.NewRefreshToken(*user)
+	if err != nil {
+		return model.AuthTokens{}, apperrors.Internal("failed to create refresh token", err)
+	}
+
+	return model.AuthTokens{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		AccessExpAt:  accessExp,
+		RefreshExpAt: refreshExp,
+	}, nil
 }
 
 func (as *AuthService) Me(ctx context.Context, userID int) (model.User, error) {

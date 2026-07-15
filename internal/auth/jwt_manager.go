@@ -1,10 +1,9 @@
 package auth
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
+	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/golang-jwt/jwt/v5" // go get github.com/golang-jwt/jwt/v5
 )
@@ -31,7 +30,7 @@ func NewJWTManager(secret string, accessTTL, refreshTTL time.Duration) *JWTManag
 	}
 }
 
-func (jm *JWTManager) NewAccessToken(user model.User) (string, error) {
+func (jm *JWTManager) NewAccessToken(user model.User) (string, int64, error) {
 	expiresAt := time.Now().Add(jm.accessTTL)
 
 	claims := Claims{
@@ -50,10 +49,34 @@ func (jm *JWTManager) NewAccessToken(user model.User) (string, error) {
 
 	signedToken, err := token.SignedString(jm.secret)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	return signedToken, nil
+	return signedToken, expiresAt.Unix(), nil
+}
+
+func (jm *JWTManager) NewRefreshToken(user model.User) (string, int64, error) {
+	expiresAt := time.Now().Add(jm.refreshTTL)
+
+	claims := Claims{
+		UserID:    user.ID,
+		Email:     user.Email,
+		Role:      user.Role,
+		TokenType: "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()), // number in seconds
+			ExpiresAt: jwt.NewNumericDate(expiresAt),  // number in seconds
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, err := token.SignedString(jm.secret)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return signedToken, expiresAt.Unix(), nil
 }
 
 func (jm *JWTManager) ParseAccessToken(tokenStr string) (*model.User, error) {
@@ -69,27 +92,39 @@ func (jm *JWTManager) ParseAccessToken(tokenStr string) (*model.User, error) {
 	}, nil
 }
 
-func (jm *JWTManager) parseToken(tokenStr, expectedType string) (*Claims, error) {
-	if tokenStr == "" {
-		return nil, errors.New("token is required")
-	}
-
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
-
-	parsedToken, err := parser.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return jm.secret, nil
-	})
+func (jm *JWTManager) ParseRefreshToken(tokenStr string) (*model.User, error) {
+	claims, err := jm.parseToken(tokenStr, "refresh")
 	if err != nil {
 		return nil, err
 	}
 
-	claims, ok := parsedToken.Claims.(*Claims)
-	if !ok || !parsedToken.Valid {
-		return nil, errors.New("invalid token")
+	return &model.User{
+		ID:    claims.UserID,
+		Email: claims.Email,
+		Role:  claims.Role,
+	}, nil
+}
+
+func (jm *JWTManager) parseToken(tokenStr, expectedType string) (*Claims, error) {
+	if tokenStr == "" {
+		return nil, apperrors.BadRequest("Token is required", nil)
+	}
+
+	claims := &Claims{}
+
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+
+	// barin osy tekseredi (exp, validnost)
+	parsedToken, err := parser.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return jm.secret, nil
+	})
+
+	if err != nil || !parsedToken.Valid {
+		return nil, apperrors.Unauthorized("Invalid or expired token", nil)
 	}
 
 	if claims.TokenType != expectedType {
-		return nil, fmt.Errorf("unexpected token type: %s", claims.TokenType)
+		return nil, apperrors.BadRequest("Unexpected token type", nil)
 	}
 
 	return claims, nil

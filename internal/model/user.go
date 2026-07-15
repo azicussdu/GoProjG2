@@ -72,3 +72,14 @@ func (li *LoginInput) Validate() error {
 	}
 	return nil
 }
+
+type RefreshInput struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type AuthTokens struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	AccessExpAt  int64  `json:"access_at"`
+	RefreshExpAt int64  `json:"refresh_at"`
+}

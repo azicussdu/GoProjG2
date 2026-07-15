@@ -46,13 +46,13 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	token, err := ah.service.Login(ctx, input)
+	authTokens, err := ah.service.Login(ctx, input)
 	if err != nil {
 		respondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, authTokens)
 }
 
 // Me JWT kimdiki sony kaitarady
@@ -67,4 +67,20 @@ func (ah *AuthHandler) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (ah *AuthHandler) Refresh(c *gin.Context) {
+	var input model.RefreshInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		respondWithError(c, apperrors.BadRequest("empty refresh token", nil))
+		return
+	}
+
+	newTokens, err := ah.service.Refresh(c.Request.Context(), input.RefreshToken)
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, newTokens)
 }
