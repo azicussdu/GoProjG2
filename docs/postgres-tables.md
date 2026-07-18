@@ -41,4 +41,19 @@ create table users (
 );
 ```
 
+```
+create table enrollments (
+                       id              serial primary key,
+                       student_id      integer not null references users(id) on delete cascade,
+                       course_id       integer not null references courses(id) on delete cascade,
+                       created_at      timestamp not null default now(),
+                       updated_at      timestamp not null default now(),
+                       deleted_at      timestamp null
+);
+
+create unique index enrollments_student_course_active_idx
+    on enrollments (student_id, course_id)
+    where deleted_at is null;
+```
+
 ---

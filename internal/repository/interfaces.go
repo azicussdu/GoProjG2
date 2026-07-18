@@ -27,3 +27,9 @@ type UserRepoI interface {
 	GetByEmail(ctx context.Context, email string) (model.User, error)
 	GetByID(ctx context.Context, id int) (model.User, error)
 }
+
+type EnrollmentRepoI interface {
+	Create(ctx context.Context, enrollment model.Enrollment) (int, error)
+	Delete(ctx context.Context, studentID, courseID int) error
+	GetByStudentID(ctx context.Context, studentID int) ([]model.Course, error)
+}

@@ -31,7 +31,11 @@ func Run(cfg *config.Config) error {
 	authService := service.NewAuthService(userRepo, jwtManager)
 	authHandler := handler.NewAuthHandler(authService)
 
-	router := setupRouter(courseHandler, lessonHandler, authHandler, jwtManager)
+	enrollmentRepo := repository.NewPostgresEnrollmentRepo(db)
+	enrollmentService := service.NewEnrollmentService(enrollmentRepo, courseRepo)
+	enrollmentHandler := handler.NewEnrollmentHandler(enrollmentService)
+
+	router := setupRouter(courseHandler, lessonHandler, authHandler, enrollmentHandler, jwtManager)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: router}
 	return srv.ListenAndServe()

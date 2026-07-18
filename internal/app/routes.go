@@ -11,9 +11,14 @@ func setupRouter(
 	courseHandler *handler.CourseHandler,
 	lessonHandler *handler.LessonHandler,
 	authHandler *handler.AuthHandler,
+	enrollmentHandler *handler.EnrollmentHandler,
 	jwtManager *auth.JWTManager,
 ) *gin.Engine {
 	router := gin.New()
+
+	teacherAdmin := middleware.Role("teacher", "admin")
+	adminOnly := middleware.Role("admin")
+	authRequired := middleware.Auth(jwtManager)
 
 	api := router.Group("/api")
 	{
@@ -22,14 +27,18 @@ func setupRouter(
 			courses.GET("", courseHandler.GetAll)
 			courses.GET("/:id", courseHandler.GetByID)
 
-			courses.POST("",
-				middleware.Auth(jwtManager),
-				middleware.Role("teacher", "admin"),
-				courseHandler.Create)
+			courses.POST("", authRequired, teacherAdmin, courseHandler.Create)
+			courses.PUT("/:id", authRequired, teacherAdmin, courseHandler.Update)
+			courses.DELETE("/:id", authRequired, adminOnly, courseHandler.Delete)
 
-			courses.PUT("/:id", middleware.Auth(jwtManager), courseHandler.Update)
-			courses.DELETE("/:id", middleware.Auth(jwtManager), courseHandler.Delete)
 			courses.GET("/:id/lessons", lessonHandler.GetByCourseID)
+
+			courses.POST("/:id/enroll", authRequired, enrollmentHandler.Enroll)
+			courses.DELETE("/:id/enroll", authRequired, enrollmentHandler.Leave)
+		}
+		enrollments := api.Group("/enrollments") //  /api/enrollments/...
+		{
+			enrollments.GET("/me", authRequired, enrollmentHandler.GetMyCourses)
 		}
 		lessons := api.Group("/lessons") //  /api/lessons/...
 		{

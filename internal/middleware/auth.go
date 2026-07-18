@@ -30,7 +30,7 @@ func Auth(jwtManager *auth.JWTManager) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("auth_user", user)
+		c.Set("auth_user", *user)
 		c.Next()
 	}
 }
