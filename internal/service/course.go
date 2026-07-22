@@ -7,15 +7,27 @@ import (
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/azicussdu/GoProjG2/internal/repository"
+	"github.com/jmoiron/sqlx"
 )
 
 type CourseService struct {
-	repo repository.CourseRepoI
+	repo           repository.CourseRepoI
+	lessonRepo     repository.LessonRepoI
+	enrollmentRepo repository.EnrollmentRepoI
+	db             *sqlx.DB
 }
 
-func NewCourseService(courseRepo repository.CourseRepoI) *CourseService {
+func NewCourseService(
+	courseRepo repository.CourseRepoI,
+	lessonRepo repository.LessonRepoI,
+	enrollmentRepo repository.EnrollmentRepoI,
+	db *sqlx.DB) *CourseService {
+
 	service := &CourseService{
-		repo: courseRepo,
+		repo:           courseRepo,
+		lessonRepo:     lessonRepo,
+		enrollmentRepo: enrollmentRepo,
+		db:             db,
 	}
 
 	return service
@@ -37,6 +49,20 @@ func (cs *CourseService) GetByID(ctx context.Context, id int) (model.Course, err
 }
 
 func (cs *CourseService) Delete(ctx context.Context, id int) error {
+
+	//tx, err := cs.db.BeginTxx(ctx, nil)
+	//if err != nil {
+	//	return apperrors.Internal("failed to begin transaction", err)
+	//}
+
+	// TODO (Rollback)
+
+	//cs.lessonRepo.DeleteByCourseID(ctx, tx, id)
+	//
+	//cs.enrollmentRepo.DeleteByCourseID(ctx, tx, id)
+	//
+	//cs.repo.Delete(ctx, tx, id)
+
 	if id <= 0 {
 		return apperrors.BadRequest("invalid ID parameter", nil)
 	}

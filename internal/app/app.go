@@ -17,22 +17,21 @@ func Run(cfg *config.Config) error {
 	}
 	defer db.Close()
 
-	courseRepo := repository.NewPostgresCourseRepo(db)
-	courseService := service.NewCourseService(courseRepo)
-	courseHandler := handler.NewCourseHandler(courseService)
-
-	lessonRepo := repository.NewPostgresLessonRepo(db)
-	lessonService := service.NewLessonService(lessonRepo)
-	lessonHandler := handler.NewLessonHandler(lessonService)
-
 	jwtManager := auth.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
 
+	courseRepo := repository.NewPostgresCourseRepo(db)
+	lessonRepo := repository.NewPostgresLessonRepo(db)
 	userRepo := repository.NewPostgresUserRepo(db)
-	authService := service.NewAuthService(userRepo, jwtManager)
-	authHandler := handler.NewAuthHandler(authService)
-
 	enrollmentRepo := repository.NewPostgresEnrollmentRepo(db)
+
+	courseService := service.NewCourseService(courseRepo, lessonRepo, enrollmentRepo, db)
+	lessonService := service.NewLessonService(lessonRepo)
+	authService := service.NewAuthService(userRepo, jwtManager)
 	enrollmentService := service.NewEnrollmentService(enrollmentRepo, courseRepo)
+
+	courseHandler := handler.NewCourseHandler(courseService)
+	lessonHandler := handler.NewLessonHandler(lessonService)
+	authHandler := handler.NewAuthHandler(authService)
 	enrollmentHandler := handler.NewEnrollmentHandler(enrollmentService)
 
 	router := setupRouter(courseHandler, lessonHandler, authHandler, enrollmentHandler, jwtManager)
