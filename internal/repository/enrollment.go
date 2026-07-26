@@ -87,3 +87,20 @@ func (r *PostgresEnrollmentRepo) GetByStudentID(ctx context.Context, studentID i
 
 	return courses, nil
 }
+
+func (r *PostgresEnrollmentRepo) DeleteByCourseID(ctx context.Context, tx *sqlx.Tx, courseID int) error {
+	query := `
+		UPDATE enrollments
+		SET deleted_at = NOW(),
+		    updated_at = NOW()
+		WHERE course_id = $1
+			AND deleted_at IS NULL
+	`
+
+	_, err := tx.ExecContext(ctx, query, courseID)
+	if err != nil {
+		return apperrors.Internal("failed to delete enrollments for course", err)
+	}
+
+	return nil
+}

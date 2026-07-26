@@ -163,26 +163,18 @@ func (r *PostgresLessonRepo) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *PostgresLessonRepo) DeleteByCourseID(ctx context.Context, id int) error {
+func (r *PostgresLessonRepo) DeleteByCourseID(ctx context.Context, tx *sqlx.Tx, courseID int) error {
 	query := `
 		UPDATE lessons
 		SET deleted_at = NOW(),
 		    updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
+		WHERE course_id = $1
+			AND deleted_at IS NULL
 	`
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	_, err := tx.ExecContext(ctx, query, courseID)
 	if err != nil {
-		return apperrors.Internal("failed to delete lesson", err)
-	}
-
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return apperrors.Internal("failed to delete lesson", err)
-	}
-
-	if affectedRows == 0 {
-		return apperrors.NotFound("lesson with ID not found", nil)
+		return apperrors.Internal("failed to delete lessons", err)
 	}
 
 	return nil

@@ -49,24 +49,33 @@ func (cs *CourseService) GetByID(ctx context.Context, id int) (model.Course, err
 }
 
 func (cs *CourseService) Delete(ctx context.Context, id int) error {
-
-	//tx, err := cs.db.BeginTxx(ctx, nil)
-	//if err != nil {
-	//	return apperrors.Internal("failed to begin transaction", err)
-	//}
-
-	// TODO (Rollback)
-
-	//cs.lessonRepo.DeleteByCourseID(ctx, tx, id)
-	//
-	//cs.enrollmentRepo.DeleteByCourseID(ctx, tx, id)
-	//
-	//cs.repo.Delete(ctx, tx, id)
-
 	if id <= 0 {
 		return apperrors.BadRequest("invalid ID parameter", nil)
 	}
-	return cs.repo.Delete(ctx, id)
+
+	tx, err := cs.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return apperrors.Internal("failed to begin transaction", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	if err = cs.lessonRepo.DeleteByCourseID(ctx, tx, id); err != nil {
+		return err
+	}
+	if err = cs.enrollmentRepo.DeleteByCourseID(ctx, tx, id); err != nil {
+		return err
+	}
+	if err = cs.repo.Delete(ctx, tx, id); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return apperrors.Internal("failed to commit course delete", err)
+	}
+	return nil
 }
 
 func (cs *CourseService) Create(ctx context.Context, input model.CreateCourse) (int, error) {

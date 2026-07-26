@@ -64,7 +64,7 @@ func (pcr *PostgresCourseRepo) GetByID(ctx context.Context, id int) (model.Cours
 	return course, nil
 }
 
-func (pcr *PostgresCourseRepo) Delete(ctx context.Context, id int) error {
+func (pcr *PostgresCourseRepo) Delete(ctx context.Context, tx *sqlx.Tx, id int) error {
 	query := `
 		UPDATE courses
 		SET deleted_at = NOW(),
@@ -72,7 +72,7 @@ func (pcr *PostgresCourseRepo) Delete(ctx context.Context, id int) error {
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	result, err := pcr.db.ExecContext(ctx, query, id)
+	result, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return apperrors.Internal("failed to delete course", err)
 	}
