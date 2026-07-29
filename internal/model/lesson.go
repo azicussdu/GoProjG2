@@ -9,8 +9,10 @@ import (
 )
 
 type Lesson struct {
-	ID        int            `json:"id" gorm:"primary_key; auto_increment"`
-	CourseID  int            `json:"course_id" gorm:"not null"`
+	ID       int    `json:"id" gorm:"primary_key; auto_increment"`
+	CourseID int    `json:"course_id" gorm:"not null"`
+	Course   Course `json:"course" gorm:"foreignKey:CourseID;constraint:OnDelete:CASCADE;"`
+
 	Title     string         `json:"title" gorm:"type:varchar(255); not null"`
 	Content   *string        `json:"content,omitempty"`
 	Position  int            `json:"position" gorm:"default:1; not null"`
