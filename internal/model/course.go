@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
+	"gorm.io/gorm"
 )
 
 const minTitleLength = 3
@@ -16,19 +17,21 @@ var allowedLevels = map[string]bool{
 }
 
 type Course struct {
-	ID          int     `json:"id" db:"id"`
-	Title       string  `json:"title" db:"title"`
-	Description *string `json:"description,omitempty" db:"description"`
-	Price       int     `json:"price" db:"price"`
-	Level       *string `json:"level,omitempty" db:"level"`
-	IsActive    bool    `json:"is_active" db:"is_active"`
-	TeacherID   int     `json:"teacher_id" db:"teacher_id"`
+	ID          int     `json:"id" gorm:"primary_key; auto_increment"` // gorm jazbasa da bolady (ID bolsa)
+	Title       string  `json:"title" gorm:"type:varchar(255); not null"`
+	Description *string `json:"description,omitempty"`
+	Price       int     `json:"price" gorm:"default:0; not null"`
+	Level       *string `json:"level,omitempty" gorm:"varchar(50)"`
+	IsActive    bool    `json:"is_active" gorm:"default:false; not null"`
 
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	TeacherID int  `json:"teacher_id"` // foreign key | users(id) primary key
+	Teacher   User `json:"teacher" gorm:"foreignKey:TeacherID;constraint:OnDelete:SET NULL;"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
 
-// Create
 type CreateCourse struct {
 	Title       string  `json:"title" binding:"required"`
 	Description *string `json:"description"`

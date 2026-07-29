@@ -7,25 +7,19 @@ import (
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type PostgresEnrollmentRepo struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewPostgresEnrollmentRepo(db *sqlx.DB) *PostgresEnrollmentRepo {
+func NewPostgresEnrollmentRepo(db *gorm.DB) *PostgresEnrollmentRepo {
 	return &PostgresEnrollmentRepo{db: db}
 }
 
 func (r *PostgresEnrollmentRepo) Create(ctx context.Context, enrollment model.Enrollment) (int, error) {
-	query := `
-		INSERT INTO enrollments (student_id, course_id, created_at, updated_at)
-		VALUES (:student_id, :course_id, :created_at, :updated_at)
-		RETURNING id
-	`
-
-	rows, err := r.db.NamedQueryContext(ctx, query, enrollment)
+	err := r.db.WithContext(ctx).Create(&enrollment).Error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode {
@@ -34,35 +28,18 @@ func (r *PostgresEnrollmentRepo) Create(ctx context.Context, enrollment model.En
 		return 0, apperrors.Internal("failed to create enrollment", err)
 	}
 
-	var id int
-	if rows.Next() {
-		if err = rows.Scan(&id); err != nil {
-			return 0, apperrors.Internal("failed to create enrollment", err)
-		}
-	}
-
-	return id, nil
+	return enrollment.ID, nil
 }
 
 func (r *PostgresEnrollmentRepo) Delete(ctx context.Context, studentID, courseID int) error {
-	query := `
-		UPDATE enrollments
-		SET deleted_at = NOW(),
-		    updated_at = NOW()
-		WHERE student_id = $1 AND course_id = $2 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query, studentID, courseID)
-	if err != nil {
-		return apperrors.Internal("failed to leave course", err)
+	result := r.db.WithContext(ctx).
+		Where("student_id = ? AND course_id = ?", studentID, courseID).
+		Delete(&model.Enrollment{})
+	if result.Error != nil {
+		return apperrors.Internal("failed to leave course", result.Error)
 	}
 
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return apperrors.Internal("failed to leave course", err)
-	}
-
-	if affectedRows == 0 {
+	if result.RowsAffected == 0 {
 		return apperrors.NotFound("enrollment not found", nil)
 	}
 
@@ -72,15 +49,11 @@ func (r *PostgresEnrollmentRepo) Delete(ctx context.Context, studentID, courseID
 func (r *PostgresEnrollmentRepo) GetByStudentID(ctx context.Context, studentID int) ([]model.Course, error) {
 	courses := make([]model.Course, 0)
 
-	query := `
-		SELECT c.id, c.title, c.description, c.price, c.level, c.is_active, c.teacher_id, c.created_at, c.updated_at
-		FROM courses c
-		JOIN enrollments e ON e.course_id = c.id
-		WHERE e.student_id = $1 AND e.deleted_at IS NULL AND c.deleted_at IS NULL
-		ORDER BY e.created_at DESC
-	`
-
-	err := r.db.SelectContext(ctx, &courses, query, studentID)
+	err := r.db.WithContext(ctx).
+		Joins("JOIN enrollments ON enrollments.course_id = courses.id").
+		Where("enrollments.student_id = ? AND enrollments.deleted_at IS NULL", studentID).
+		Order("enrollments.created_at DESC").
+		Find(&courses).Error
 	if err != nil {
 		return nil, apperrors.Internal("failed to get enrolled courses", err)
 	}
@@ -88,16 +61,8 @@ func (r *PostgresEnrollmentRepo) GetByStudentID(ctx context.Context, studentID i
 	return courses, nil
 }
 
-func (r *PostgresEnrollmentRepo) DeleteByCourseID(ctx context.Context, tx *sqlx.Tx, courseID int) error {
-	query := `
-		UPDATE enrollments
-		SET deleted_at = NOW(),
-		    updated_at = NOW()
-		WHERE course_id = $1
-			AND deleted_at IS NULL
-	`
-
-	_, err := tx.ExecContext(ctx, query, courseID)
+func (r *PostgresEnrollmentRepo) DeleteByCourseID(ctx context.Context, tx *gorm.DB, courseID int) error {
+	err := tx.WithContext(ctx).Where("course_id = ?", courseID).Delete(&model.Enrollment{}).Error
 	if err != nil {
 		return apperrors.Internal("failed to delete enrollments for course", err)
 	}

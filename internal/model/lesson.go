@@ -5,16 +5,18 @@ import (
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
+	"gorm.io/gorm"
 )
 
 type Lesson struct {
-	ID        int       `json:"id" db:"id"`
-	CourseID  int       `json:"course_id" db:"course_id"`
-	Title     string    `json:"title" db:"title"`
-	Content   *string   `json:"content,omitempty" db:"content"`
-	Position  int       `json:"position" db:"position"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	ID        int            `json:"id" gorm:"primary_key; auto_increment"`
+	CourseID  int            `json:"course_id" gorm:"not null"`
+	Title     string         `json:"title" gorm:"type:varchar(255); not null"`
+	Content   *string        `json:"content,omitempty"`
+	Position  int            `json:"position" gorm:"default:1; not null"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
 
 type CreateLesson struct {

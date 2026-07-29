@@ -2,36 +2,26 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type PostgresLessonRepo struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewPostgresLessonRepo(db *sqlx.DB) *PostgresLessonRepo {
+func NewPostgresLessonRepo(db *gorm.DB) *PostgresLessonRepo {
 	return &PostgresLessonRepo{db: db}
 }
 
 func (r *PostgresLessonRepo) GetByCourseID(ctx context.Context, courseID int) ([]model.Lesson, error) {
 	lessons := make([]model.Lesson, 0)
 
-	query := `
-		SELECT id, course_id, title, content, position, created_at, updated_at
-		FROM lessons
-		WHERE course_id = $1 AND deleted_at IS NULL
-		ORDER BY position
-	`
-
-	err := r.db.SelectContext(ctx, &lessons, query, courseID)
+	err := r.db.WithContext(ctx).Where("course_id = ?", courseID).Order("position").Find(&lessons).Error
 	if err != nil {
 		return nil, apperrors.Internal("failed to get lessons", err)
 	}
@@ -42,16 +32,9 @@ func (r *PostgresLessonRepo) GetByCourseID(ctx context.Context, courseID int) ([
 func (r *PostgresLessonRepo) GetByID(ctx context.Context, id int) (model.Lesson, error) {
 	var lesson model.Lesson
 
-	query := `
-		SELECT id, course_id, title, content, position, created_at, updated_at
-		FROM lessons
-		WHERE id = $1 AND deleted_at IS NULL
-		LIMIT 1
-	`
-
-	err := r.db.GetContext(ctx, &lesson, query, id)
+	err := r.db.WithContext(ctx).First(&lesson, id).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.Lesson{}, apperrors.NotFound("lesson with ID not found", err)
 		}
 		return model.Lesson{}, apperrors.Internal("failed to get lesson", err)
@@ -61,77 +44,41 @@ func (r *PostgresLessonRepo) GetByID(ctx context.Context, id int) (model.Lesson,
 }
 
 func (r *PostgresLessonRepo) Create(ctx context.Context, lesson model.Lesson) (int, error) {
-	query := `
-		INSERT INTO lessons (course_id, title, content, position, created_at, updated_at)
-		VALUES (:course_id, :title, :content, :position, :created_at, :updated_at)
-		RETURNING id
-	`
-
-	rows, err := r.db.NamedQueryContext(ctx, query, lesson)
+	err := r.db.WithContext(ctx).Create(&lesson).Error
 	if err != nil {
 		return 0, apperrors.Internal("failed to create lesson", err)
 	}
 
-	var id int
-	if rows.Next() {
-		if err = rows.Scan(&id); err != nil {
-			return 0, apperrors.Internal("failed to create lesson", err)
-		}
-	}
-
-	return id, nil
+	return lesson.ID, nil
 }
 
 func (r *PostgresLessonRepo) Update(ctx context.Context, id int, input model.UpdateLesson) (int, error) {
-	var setParts []string
-	var args []any
-	argID := 1
+	updates := map[string]any{}
 
 	if input.Title != nil {
-		setParts = append(setParts, fmt.Sprintf("title=$%d", argID))
-		args = append(args, *input.Title)
-		argID++
+		updates["title"] = *input.Title
 	}
 
 	if input.Content != nil {
-		setParts = append(setParts, fmt.Sprintf("content=$%d", argID))
-		args = append(args, *input.Content)
-		argID++
+		updates["content"] = *input.Content
 	}
 
 	if input.Position != nil {
-		setParts = append(setParts, fmt.Sprintf("position=$%d", argID))
-		args = append(args, *input.Position)
-		argID++
+		updates["position"] = *input.Position
 	}
 
-	if len(setParts) == 0 {
+	if len(updates) == 0 {
 		return 0, apperrors.BadRequest("no fields to update", nil)
 	}
 
-	setParts = append(setParts, fmt.Sprintf("updated_at=$%d", argID))
-	args = append(args, time.Now())
-	argID++
+	updates["updated_at"] = time.Now()
 
-	query := fmt.Sprintf(`
-		UPDATE lessons
-		SET %s
-		WHERE id = $%d AND deleted_at IS NULL
-	`, strings.Join(setParts, ", "), argID)
-
-	args = append(args, id)
-
-	result, err := r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return 0, apperrors.Internal("failed to update lesson", err)
+	result := r.db.WithContext(ctx).Model(&model.Lesson{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		return 0, apperrors.Internal("failed to update lesson", result.Error)
 	}
 
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return 0, apperrors.Internal("failed to update lesson", err)
-	}
-
-	if affectedRows == 0 {
+	if result.RowsAffected == 0 {
 		return 0, apperrors.NotFound("lesson with ID not found", nil)
 	}
 
@@ -139,40 +86,20 @@ func (r *PostgresLessonRepo) Update(ctx context.Context, id int, input model.Upd
 }
 
 func (r *PostgresLessonRepo) Delete(ctx context.Context, id int) error {
-	query := `
-		UPDATE lessons
-		SET deleted_at = NOW(),
-		    updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-	`
-
-	result, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return apperrors.Internal("failed to delete lesson", err)
+	result := r.db.WithContext(ctx).Delete(&model.Lesson{}, id)
+	if result.Error != nil {
+		return apperrors.Internal("failed to delete lesson", result.Error)
 	}
 
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return apperrors.Internal("failed to delete lesson", err)
-	}
-
-	if affectedRows == 0 {
+	if result.RowsAffected == 0 {
 		return apperrors.NotFound("lesson with ID not found", nil)
 	}
 
 	return nil
 }
 
-func (r *PostgresLessonRepo) DeleteByCourseID(ctx context.Context, tx *sqlx.Tx, courseID int) error {
-	query := `
-		UPDATE lessons
-		SET deleted_at = NOW(),
-		    updated_at = NOW()
-		WHERE course_id = $1
-			AND deleted_at IS NULL
-	`
-
-	_, err := tx.ExecContext(ctx, query, courseID)
+func (r *PostgresLessonRepo) DeleteByCourseID(ctx context.Context, tx *gorm.DB, courseID int) error {
+	err := tx.WithContext(ctx).Where("course_id = ?", courseID).Delete(&model.Lesson{}).Error
 	if err != nil {
 		return apperrors.Internal("failed to delete lessons", err)
 	}

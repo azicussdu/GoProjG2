@@ -15,7 +15,12 @@ func Run(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
 
 	jwtManager := auth.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.AccessTTL, cfg.JWT.RefreshTTL)
 

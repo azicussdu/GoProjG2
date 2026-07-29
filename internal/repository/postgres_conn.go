@@ -1,17 +1,16 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/config"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
+	"github.com/azicussdu/GoProjG2/internal/model"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-// sqlx.DB strukturanyn obektin kaitaru ushin
-func NewPostgresDB(cfg *config.Config) (*sqlx.DB, error) {
+func NewPostgresDB(cfg *config.Config) (*gorm.DB, error) {
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Database.Host,
@@ -21,17 +20,23 @@ func NewPostgresDB(cfg *config.Config) (*sqlx.DB, error) {
 		cfg.Database.DBName,
 		cfg.Database.SSLMode)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	db, err := sqlx.ConnectContext(ctx, "pgx", connStr)
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxLifetime(30 * time.Minute)
+	if err = db.AutoMigrate(&model.User{}, &model.Course{}, &model.Lesson{}, &model.Enrollment{}); err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	return db, nil
 }

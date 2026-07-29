@@ -16,14 +16,14 @@ var allowedRoles = map[string]bool{
 }
 
 type User struct {
-	ID           int       `db:"id" json:"id"`
-	FullName     string    `db:"full_name" json:"full_name"`
-	Email        string    `db:"email" json:"email"`
-	PasswordHash string    `db:"password_hash" json:"-"`
-	Role         string    `db:"role" json:"role"`
-	IsActive     bool      `db:"is_active" json:"is_active"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	ID           int       `json:"id" gorm:"primary_key; auto_increment"`
+	FullName     string    `json:"full_name" gorm:"type:varchar(255); not null"`
+	Email        string    `json:"email" gorm:"type:varchar(255); unique; not null"`
+	PasswordHash string    `json:"-" gorm:"not null"`
+	Role         string    `json:"role" gorm:"type:varchar(50); default:student; not null"`
+	IsActive     bool      `json:"is_active" gorm:"default:true; not null"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type RegisterInput struct {

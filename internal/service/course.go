@@ -2,26 +2,27 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/azicussdu/GoProjG2/internal/repository"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type CourseService struct {
 	repo           repository.CourseRepoI
 	lessonRepo     repository.LessonRepoI
 	enrollmentRepo repository.EnrollmentRepoI
-	db             *sqlx.DB
+	db             *gorm.DB
 }
 
 func NewCourseService(
 	courseRepo repository.CourseRepoI,
 	lessonRepo repository.LessonRepoI,
 	enrollmentRepo repository.EnrollmentRepoI,
-	db *sqlx.DB) *CourseService {
+	db *gorm.DB) *CourseService {
 
 	service := &CourseService{
 		repo:           courseRepo,
@@ -53,28 +54,23 @@ func (cs *CourseService) Delete(ctx context.Context, id int) error {
 		return apperrors.BadRequest("invalid ID parameter", nil)
 	}
 
-	tx, err := cs.db.BeginTxx(ctx, nil)
+	err := cs.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := cs.lessonRepo.DeleteByCourseID(ctx, tx, id); err != nil {
+			return err
+		}
+		if err := cs.enrollmentRepo.DeleteByCourseID(ctx, tx, id); err != nil {
+			return err
+		}
+		return cs.repo.Delete(ctx, tx, id)
+	})
 	if err != nil {
-		return apperrors.Internal("failed to begin transaction", err)
-	}
-
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	if err = cs.lessonRepo.DeleteByCourseID(ctx, tx, id); err != nil {
-		return err
-	}
-	if err = cs.enrollmentRepo.DeleteByCourseID(ctx, tx, id); err != nil {
-		return err
-	}
-	if err = cs.repo.Delete(ctx, tx, id); err != nil {
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
+		var appErr *apperrors.AppError
+		if errors.As(err, &appErr) {
+			return err
+		}
 		return apperrors.Internal("failed to commit course delete", err)
 	}
+
 	return nil
 }
 

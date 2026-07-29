@@ -2,36 +2,26 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/azicussdu/GoProjG2/internal/apperrors"
 	"github.com/azicussdu/GoProjG2/internal/model"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 const uniqueViolationCode = "23505"
 
 type PostgresUserRepo struct {
-	db *sqlx.DB
+	db *gorm.DB
 }
 
-func NewPostgresUserRepo(dbObj *sqlx.DB) *PostgresUserRepo {
+func NewPostgresUserRepo(dbObj *gorm.DB) *PostgresUserRepo {
 	return &PostgresUserRepo{db: dbObj}
 }
 
 func (pur *PostgresUserRepo) Create(ctx context.Context, user model.User) (int, error) {
-	query := `
-    INSERT INTO users (
-        full_name, email, password_hash, role, created_at, updated_at
-    ) VALUES (
-        :full_name, :email, :password_hash, :role, :created_at, :updated_at
-    )
-    RETURNING id
-  `
-
-	rows, err := pur.db.NamedQueryContext(ctx, query, user)
+	err := pur.db.WithContext(ctx).Create(&user).Error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode {
@@ -40,30 +30,15 @@ func (pur *PostgresUserRepo) Create(ctx context.Context, user model.User) (int, 
 		return 0, apperrors.Internal("failed to create user", err)
 	}
 
-	var id int
-	if rows.Next() {
-		err = rows.Scan(&id)
-		if err != nil {
-			return 0, apperrors.Internal("failed to create user", err)
-		}
-	}
-
-	return id, nil
+	return user.ID, nil
 }
 
 func (pur *PostgresUserRepo) GetByEmail(ctx context.Context, email string) (model.User, error) {
 	var user model.User
 
-	query := `
-    SELECT id, full_name, email, password_hash, role, created_at, updated_at
-    FROM users
-    WHERE email = $1
-    LIMIT 1
-  `
-
-	err := pur.db.GetContext(ctx, &user, query, email)
+	err := pur.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, apperrors.NotFound("user not found", err)
 		}
 		return model.User{}, apperrors.Internal("failed to get user", err)
@@ -75,16 +50,9 @@ func (pur *PostgresUserRepo) GetByEmail(ctx context.Context, email string) (mode
 func (pur *PostgresUserRepo) GetByID(ctx context.Context, id int) (model.User, error) {
 	var user model.User
 
-	query := `
-    SELECT id, full_name, email, password_hash, role, created_at, updated_at
-    FROM users
-    WHERE id = $1
-    LIMIT 1
-  `
-
-	err := pur.db.GetContext(ctx, &user, query, id)
+	err := pur.db.WithContext(ctx).First(&user, id).Error
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, apperrors.NotFound("user not found", err)
 		}
 		return model.User{}, apperrors.Internal("failed to get user", err)
