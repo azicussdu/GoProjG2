@@ -32,6 +32,19 @@ func currentUser(c *gin.Context) (model.User, error) {
 	return user, nil
 }
 
+// Enroll godoc
+// @Summary      Enroll in a course
+// @Description  Enrolls the authenticated student in a course. Requires the "student" role.
+// @Tags         enrollments
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Course ID"
+// @Success      201  {object}  map[string]int
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Router       /courses/{id}/enroll [post]
 func (eh *EnrollmentHandler) Enroll(c *gin.Context) {
 	user, err := currentUser(c)
 	if err != nil {
@@ -61,6 +74,19 @@ func (eh *EnrollmentHandler) Enroll(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": newID})
 }
 
+// Leave godoc
+// @Summary      Leave a course
+// @Description  Removes the authenticated student's enrollment from a course. Requires the "student" role.
+// @Tags         enrollments
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Course ID"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Router       /courses/{id}/enroll [delete]
 func (eh *EnrollmentHandler) Leave(c *gin.Context) {
 	user, err := currentUser(c)
 	if err != nil {
@@ -89,6 +115,15 @@ func (eh *EnrollmentHandler) Leave(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "left the course"})
 }
 
+// GetMyCourses godoc
+// @Summary      List my courses
+// @Description  Returns the courses the authenticated user is enrolled in
+// @Tags         enrollments
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {array}   model.Course
+// @Failure      401  {object}  map[string]string
+// @Router       /enrollments/me [get]
 func (eh *EnrollmentHandler) GetMyCourses(c *gin.Context) {
 	user, err := currentUser(c)
 	if err != nil {

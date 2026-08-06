@@ -2,7 +2,7 @@ package math
 
 import (
 	"testing"
-
+	// go get github.com/stretchr/testify
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -10,6 +10,7 @@ import (
 func TestSum(t *testing.T) {
 	got := Sum(2, 3)
 	want := 5
+
 	if got != want {
 		t.Errorf("Sum(2, 3) = %d; хотим %d", got, want)
 	}
@@ -20,6 +21,7 @@ func TestSum(t *testing.T) {
 Идея: описываем набор случаев как срез структур, затем в цикле прогоняем один и тот же
 код проверки. Так мы не копируем логику, а лишь добавляем строки в таблицу.
 */
+
 func TestSum_Table(t *testing.T) {
 	tests := []struct {
 		name string
@@ -48,6 +50,7 @@ func TestDivide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("неожиданная ошибка: %v", err)
 	}
+
 	if got != 5 {
 		t.Errorf("Divide(10,2) = %d; хотим 5", got)
 	}

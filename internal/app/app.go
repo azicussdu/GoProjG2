@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/azicussdu/GoProjG2/internal/auth"
@@ -13,6 +14,8 @@ import (
 func Run(cfg *config.Config) error {
 	db, err := repository.NewPostgresDB(cfg)
 	if err != nil {
+		slog.Debug("some error happened with DB", "db USER", cfg.Database.Username, "db Password", cfg.Database.Password)
+		slog.Error("failed to connect to database")
 		return err
 	}
 	defer db.Close()
@@ -37,5 +40,6 @@ func Run(cfg *config.Config) error {
 	router := setupRouter(courseHandler, lessonHandler, authHandler, enrollmentHandler, jwtManager)
 
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: router}
+	slog.Info("server started successfully")
 	return srv.ListenAndServe()
 }

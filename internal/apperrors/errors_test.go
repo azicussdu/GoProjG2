@@ -10,6 +10,7 @@ import (
 
 // This is the simplest possible unit test: call a pure function,
 // check what it returns. No mocks, no setup, no dependencies.
+
 func TestNotFound(t *testing.T) {
 	err := NotFound("course not found", nil)
 

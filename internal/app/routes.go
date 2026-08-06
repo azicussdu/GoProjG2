@@ -1,10 +1,13 @@
 package app
 
 import (
+	_ "github.com/azicussdu/GoProjG2/docs" // !!! KEREK
 	"github.com/azicussdu/GoProjG2/internal/auth"
 	"github.com/azicussdu/GoProjG2/internal/handler"
 	"github.com/azicussdu/GoProjG2/internal/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func setupRouter(
@@ -15,6 +18,8 @@ func setupRouter(
 	jwtManager *auth.JWTManager,
 ) *gin.Engine {
 	router := gin.New()
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	teacherAdmin := middleware.Role("teacher", "admin")
 	adminOnly := middleware.Role("admin")
